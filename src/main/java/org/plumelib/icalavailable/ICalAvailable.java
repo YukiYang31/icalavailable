@@ -30,6 +30,7 @@ import net.fortuna.ical4j.model.component.CalendarComponent;
 import net.fortuna.ical4j.model.component.VFreeBusy;
 import net.fortuna.ical4j.model.parameter.FbType;
 import net.fortuna.ical4j.model.property.FreeBusy;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -106,10 +107,10 @@ public final class ICalAvailable {
   public static String business_hours = "9am-5pm";
 
   /** The business hours, outside of which all times are unavailable. */
-  static List<Period> businessHours = new ArrayList<>();
+  static @Modifiable List<Period> businessHours = new ArrayList<>();
 
   /** The business days, outside of which all times are unavailable. */
-  static List<Integer> businessDays = new ArrayList<>();
+  static @Modifiable List<Integer> businessDays = new ArrayList<>();
 
   // initialize business days to Mon-Fri
   static {
@@ -158,7 +159,7 @@ public final class ICalAvailable {
   public static boolean debug = false;
 
   /** The appointments (the times that are unavailable for a meeting). */
-  static List<Calendar> calendars = new ArrayList<>();
+  static @Modifiable List<Calendar> calendars = new ArrayList<>();
 
   /** The time format. */
   static DateFormat tf = DateFormat.getTimeInstance(DateFormat.SHORT, Locale.US);
@@ -280,10 +281,10 @@ public final class ICalAvailable {
   }
 
   /** Maps a short name to a canonical name, for commonly-used time zones. */
-  static Map<String, String> canonicalTimezones = new HashMap<>();
+  static @Modifiable Map<String, String> canonicalTimezones = new HashMap<>();
 
   /** Maps a long time zone name to a shorter one. */
-  static Map<String, String> printedTimezones = new HashMap<>();
+  static @Modifiable Map<String, String> printedTimezones = new HashMap<>();
 
   // Yuck, this should really be a separate configuration file.
   static {
