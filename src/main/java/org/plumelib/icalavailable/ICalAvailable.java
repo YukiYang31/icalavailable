@@ -525,7 +525,7 @@ public final class ICalAvailable {
       if (debug) {
         System.out.println("Request = " + request);
       }
-      ComponentList<CalendarComponent> busyTimes = new ComponentList<>();
+      @Modifiable ComponentList<CalendarComponent> busyTimes = new ComponentList<>();
       // Problem:  any all-day events will be treated as UTC.
       // Instead, they should be converted to local time (tz1).
       // But VFreeBusy does not support this, so I may need to convert
