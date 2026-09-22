@@ -55,24 +55,27 @@ import org.plumelib.options.Options;
  * <ul>
  *   <li id="option:date"><b>--date=</b><i>string</i>. First date to summarize. [default: today]
  *   <li id="option:days"><b>--days=</b><i>int</i>. Number of calendar days to summarize. [default:
- *       8]
- *   <li id="option:iCal-URL"><b>--iCal-URL=</b><i>url</i> {@code [+]}. For a Google calendar: go to
- *       settings, then click on the green "ICAL" icon for the "private address".
+ *                        8]
+ *   <li id="option:iCal-URL"><b>--iCal-URL=</b><i>url</i> {@code [+]}. For a Google Calendar: go to
+ *                            settings, then click on the green "ICAL" icon for the "private
+ *                            address".
  *   <li id="option:business-hours"><b>--business-hours=</b><i>string</i>. A list of time ranges,
- *       expressed as a String. Example: 9am-5pm,7:30pm-9:30pm [default: 9am-5pm]
+ *                                  expressed as a String. Example: 9am-5pm,7:30pm-9:30pm [default:
+ *                                  9am-5pm]
  *   <li id="option:timezone1"><b>--timezone1=</b><i>timezone</i>. Time zone as an Olson timezone
- *       ID, e.g.: America/New_York. Available times are printed in this time zone. It defaults to
- *       the system time zone.
+ *                             ID, e.g.: America/New_York. Available times are printed in this time
+ *                             zone. It defaults to the system time zone.
  *   <li id="option:timezone2"><b>--timezone2=</b><i>timezone</i>. Time zone as an Olson timezone
- *       ID, e.g.: America/New_York. If set, then free times are printed in two time zones.
+ *                             ID, e.g.: America/New_York. If set, then free times are printed in
+ *                             two time zones.
  *   <li id="option:debug"><b>--debug=</b><i>boolean</i>. If true, enable debugging output.
- *       [default: false]
+ *                         [default: false]
  * </ul>
  *
  * {@code [+]} means option can be specified multiple times
  * <!-- end options doc -->
  * If you are perplexed because of odd results, maybe it is because of the transparency of your iCal
- * items (this shows up as "available/busy" in Google calendar).
+ * items (this shows up as "available/busy" in Google Calendar).
  */
 @SuppressWarnings("PMD") // todo
 public final class ICalAvailable {
@@ -96,7 +99,7 @@ public final class ICalAvailable {
   public static int days = 8;
 
   /**
-   * For a Google calendar: go to settings, then click on the green "ICAL" icon for the "private
+   * For a Google Calendar: go to settings, then click on the green "ICAL" icon for the "private
    * address".
    */
   @Option("<url> schedule in iCal format")
@@ -145,6 +148,9 @@ public final class ICalAvailable {
 
   // Other variables
 
+  /** The number of milliseconds in one day. */
+  static final long MILLIS_PER_DAY = 1000L * 60 * 60 * 24;
+
   /** If true, enable debugging output. */
   @Option("enable debugging output")
   public static boolean debug = false;
@@ -174,9 +180,9 @@ public final class ICalAvailable {
   @EnsuresNonNull("tz1")
   static void processOptions(String[] args) {
     Options options = new Options("ICalAvailable [options]", ICalAvailable.class);
-    String[] remaining_args = options.parse(true, args);
-    if (remaining_args.length != 0) {
-      System.err.println("Unrecognized arguments: " + Arrays.toString(remaining_args));
+    String[] remainingArgs = options.parse(true, args);
+    if (remainingArgs.length != 0) {
+      System.err.println("Unrecognized arguments: " + Arrays.toString(remainingArgs));
       System.exit(1);
     }
     if (iCal_URL.isEmpty()) {
@@ -222,9 +228,9 @@ public final class ICalAvailable {
     start_date.setTimeZone(tz1);
     start_date.setMinutes((start_date.getMinutes() / 15) * 15);
 
-    for (String URL : iCal_URL) {
+    for (String iCalUrl : iCal_URL) {
       try {
-        URL url = new URL(URL);
+        URL url = new URL(iCalUrl);
         CalendarBuilder builder = new CalendarBuilder();
         Calendar c;
         try (InputStream urlStream = url.openStream()) {
@@ -235,15 +241,14 @@ public final class ICalAvailable {
               System.out.println();
               System.out.println("It is possible that the calendar has moved.");
               // Debugging: write the URL contents to standard output
-              URL url2 = new URL(URL);
-              try (InputStream url_is = url2.openStream()) {
-                System.out.printf("URL: %s%n", url2);
+              try (InputStream contentStream = url.openStream()) {
+                System.out.printf("URL: %s%n", url);
                 System.out.println("Contents:");
                 byte[] buffer = new byte[1024];
-                int len = url_is.read(buffer);
+                int len = contentStream.read(buffer);
                 while (len != -1) {
                   System.out.write(buffer, 0, len);
-                  len = url_is.read(buffer);
+                  len = contentStream.read(buffer);
                 }
                 System.out.println();
               }
@@ -254,7 +259,7 @@ public final class ICalAvailable {
         calendars.add(c);
       } catch (Exception e) {
         e.printStackTrace(System.err);
-        System.err.println("Could not read calendar from " + URL);
+        System.err.println("Could not read calendar from " + iCalUrl);
         System.exit(1);
       }
     }
@@ -308,7 +313,9 @@ public final class ICalAvailable {
    * @return either the argument, or its canonical name if possible
    */
   static String canonicalizeTimezone(String timezone) {
-    return canonicalTimezones.getOrDefault(timezone.toLowerCase(Locale.getDefault()), timezone);
+    // Use Locale.ROOT, not the default locale, so that the lookup keys (which are ASCII) match
+    // regardless of the user's locale; e.g., in a Turkish locale "IST".toLowerCase() is "ıst".
+    return canonicalTimezones.getOrDefault(timezone.toLowerCase(Locale.ROOT), timezone);
   }
 
   /**
@@ -328,7 +335,7 @@ public final class ICalAvailable {
       Pattern.compile("([0-2]?[0-9])(:([0-5][0-9]))?([aApP][mM])?");
 
   /**
-   * Parse a time like "9:30pm". The result's time zone is {@code tz1}.
+   * Parses a time like "9:30pm". The result's time zone is {@code tz1}.
    *
    * @param time the string to parse as a time
    * @return the time represented by {@code time}
@@ -365,7 +372,7 @@ public final class ICalAvailable {
     return result;
   }
 
-  /** Dump the options. For debugging. */
+  /** Dumps the options. For debugging. */
   static void printOptions() {
     System.out.println("business_hours: " + business_hours);
     System.out.println("businessHours: " + businessHours);
@@ -391,10 +398,13 @@ public final class ICalAvailable {
     }
 
     List<Period> available = new ArrayList<>();
+    DateTime day = start_date;
     for (int i = 0; i < days; i++) {
-      available.addAll(oneDayAvailable(start_date, calendars));
-      start_date = new DateTime(start_date.getTime() + 1000 * 60 * 60 * 24);
-      start_date.setTimeZone(tz1);
+      available.addAll(oneDayAvailable(day, calendars));
+      // Advancing by exactly 24 hours can land on the wrong wall-clock time across a
+      // daylight-saving-time transition, but that does not affect the day being summarized.
+      day = new DateTime(day.getTime() + MILLIS_PER_DAY);
+      day.setTimeZone(tz1);
     }
 
     if (tz2 != null) {
@@ -486,7 +496,7 @@ public final class ICalAvailable {
   // TODO:  don't propose times that are before the current moment.
 
   /**
-   * Returns a all the times that are available on a single day.
+   * Returns all the times that are available on a single day.
    *
    * @param day the day on which to look for availability
    * @param calendars the calendars that might contain conflicts
@@ -572,7 +582,7 @@ public final class ICalAvailable {
   };
 
   /**
-   * Parses a date when formatted in several common formats.
+   * Parses a date that is in one of several common formats.
    *
    * @param strDate the string to parse as a date
    * @return a Date read from the given string
@@ -586,10 +596,10 @@ public final class ICalAvailable {
       int year = new Date().getYear() + 1900;
       strDate = strDate + "/" + year;
     }
-    for (DateFormat this_df : dateFormats) {
-      this_df.setLenient(false);
+    for (DateFormat dateFormat : dateFormats) {
+      dateFormat.setLenient(false);
       try {
-        java.util.Date result = this_df.parse(strDate);
+        java.util.Date result = dateFormat.parse(strDate);
         return result;
       } catch (ParseException e) {
         // Try the next format in the list.
@@ -599,7 +609,7 @@ public final class ICalAvailable {
   }
 
   /**
-   * Format a date.
+   * Formats a date.
    *
    * @param d the date
    * @param tz the time zone
